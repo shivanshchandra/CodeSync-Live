@@ -24,6 +24,8 @@ function EditorPage() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0); // ✅ count
 
+  const [stdin, setStdin] = useState("");
+
   const codeRef = useRef(null);
   const socketRef = useRef(null);
 
@@ -97,20 +99,22 @@ function EditorPage() {
   const leaveRoom = () => navigate("/");
 
   const runCode = async () => {
-    setIsCompiling(true);
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/compile`, {
-        code: codeRef.current,
-        language: selectedLanguage,
-      });
-      setOutput(response.data.output || JSON.stringify(response.data));
-    } catch (error) {
-      console.error("Error compiling code:", error);
-      setOutput(error.response?.data?.error || "An error occurred");
-    } finally {
-      setIsCompiling(false);
-    }
-  };
+  setIsCompiling(true);
+  try {
+    const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/compile`, {
+      code: codeRef.current,
+      language: selectedLanguage,
+      input: stdin, // ✅ send input
+    });
+    setOutput(response.data.output || JSON.stringify(response.data));
+  } catch (error) {
+    console.error("Error compiling code:", error);
+    setOutput(error.response?.data?.error || "An error occurred");
+  } finally {
+    setIsCompiling(false);
+  }
+};
+
 
   const toggleCompileWindow = () => setIsCompileWindowOpen((p) => !p);
 
@@ -232,6 +236,18 @@ function EditorPage() {
             </button>
           </div>
         </div>
+
+        <div className="mb-2">
+  <label className="form-label">Input (Program Input)</label>
+  <textarea
+    className="form-control"
+    rows={3}
+    value={stdin}
+    onChange={(e) => setStdin(e.target.value)}
+    placeholder={`Example: 17\n(or multiple lines)`}
+  />
+</div>
+
         <pre className="bg-secondary p-3 rounded">
           {output || "Output will appear here after compilation"}
         </pre>

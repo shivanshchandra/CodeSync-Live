@@ -265,7 +265,7 @@ io.on("connection", (socket) => {
 });
 
 app.post("/compile", async (req, res) => {
-  const { code, language } = req.body;
+  const { code, language, input } = req.body; // ✅ take input also
 
   const config = languageConfig[language];
   if (!config) return res.status(400).json({ error: "Language not supported" });
@@ -275,6 +275,7 @@ app.post("/compile", async (req, res) => {
       script: code,
       language,
       versionIndex: config.versionIndex,
+      stdin: input || "",                 // ✅ send stdin to JDoodle
       clientId: process.env.JDOODLE_CLIENT_ID,
       clientSecret: process.env.JDOODLE_CLIENT_SECRET,
     });
@@ -293,6 +294,7 @@ app.post("/compile", async (req, res) => {
     });
   }
 });
+
 
 const PORT = process.env.PORT || 5000;
 const start = async () => {
