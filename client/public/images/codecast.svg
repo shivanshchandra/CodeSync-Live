@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="120" viewBox="0 0 420 120">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#16a34a"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="18" width="84" height="84" rx="20" fill="#0b1220" stroke="url(#g)" stroke-width="4"/>
+  <path d="M40 46 L28 60 L40 74" fill="none" stroke="url(#g)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M64 46 L76 60 L64 74" fill="none" stroke="url(#g)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="46" y="78" width="22" height="6" rx="3" fill="url(#g)"/>
+  <text x="110" y="64" font-family="Inter,Segoe UI,Arial" font-size="34" font-weight="800" fill="#e5e7eb">
+    CodeSync
+  </text>
+  <text x="270" y="64" font-family="Inter,Segoe UI,Arial" font-size="34" font-weight="800" fill="url(#g)">
+    Live
+  </text>
+  <text x="112" y="88" font-family="Inter,Segoe UI,Arial" font-size="14" fill="#9ca3af">
+    Real-time collaboration
+  </text>
+</svg>

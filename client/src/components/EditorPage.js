@@ -1,35 +1,17 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import Client from "./Client";
 import Editor from "./Editor";
+import Chat from "./Chat";
 import { initSocket } from "../Socket";
 import { ACTIONS } from "../Actions";
-import {
-  useNavigate,
-  useLocation,
-  Navigate,
-  useParams,
-} from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import axios from "axios";
+import { AuthContext } from "../context/AuthContext";
 
-// List of supported languages
 const LANGUAGES = [
-  "python3",
-  "java",
-  "cpp",
-  "nodejs",
-  "c",
-  "ruby",
-  "go",
-  "scala",
-  "bash",
-  "sql",
-  "pascal",
-  "csharp",
-  "php",
-  "swift",
-  "rust",
-  "r",
+  "python3","java","cpp","nodejs","c","ruby","go","scala","bash","sql",
+  "pascal","csharp","php","swift","rust","r",
 ];
 
 function EditorPage() {
@@ -38,78 +20,81 @@ function EditorPage() {
   const [isCompileWindowOpen, setIsCompileWindowOpen] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("python3");
-  const codeRef = useRef(null);
 
-  const Location = useLocation();
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0); // ✅ count
+
+  const codeRef = useRef(null);
+  const socketRef = useRef(null);
+
+  const location = useLocation();
   const navigate = useNavigate();
   const { roomId } = useParams();
 
-  const socketRef = useRef(null);
+  const { user, loading } = useContext(AuthContext);
+  const username = user?.name || user?.email;
 
   useEffect(() => {
     const init = async () => {
+      if (loading) return;
+
+      if (!username) {
+        toast.error("Please login again");
+        navigate("/login");
+        return;
+      }
+
       socketRef.current = await initSocket();
-      socketRef.current.on("connect_error", (err) => handleErrors(err));
-      socketRef.current.on("connect_failed", (err) => handleErrors(err));
 
       const handleErrors = (err) => {
-        console.log("Error", err);
-        toast.error("Socket connection failed, Try again later");
+        console.log("Socket Error", err);
+        toast.error("Socket connection failed, try again later");
         navigate("/");
       };
 
-      socketRef.current.emit(ACTIONS.JOIN, {
-        roomId,
-        username: Location.state?.username,
-      });
+      socketRef.current.on("connect_error", handleErrors);
+      socketRef.current.on("connect_failed", handleErrors);
 
-      socketRef.current.on(
-        ACTIONS.JOINED,
-        ({ clients, username, socketId }) => {
-          if (username !== Location.state?.username) {
-            toast.success(`${username} joined the room.`);
-          }
-          setClients(clients);
-          socketRef.current.emit(ACTIONS.SYNC_CODE, {
-            code: codeRef.current,
-            socketId,
-          });
-        }
-      );
+      socketRef.current.emit(ACTIONS.JOIN, { roomId, username });
 
-      socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
-        toast.success(`${username} left the room`);
-        setClients((prev) => {
-          return prev.filter((client) => client.socketId !== socketId);
+      socketRef.current.on(ACTIONS.JOINED, ({ clients, username: joinedUser, socketId }) => {
+        if (joinedUser !== username) toast.success(`${joinedUser} joined the room.`);
+        setClients(clients);
+
+        socketRef.current.emit(ACTIONS.SYNC_CODE, {
+          code: codeRef.current,
+          socketId,
         });
       });
+
+      socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username: leftUser }) => {
+        toast.success(`${leftUser} left the room`);
+        setClients((prev) => prev.filter((c) => c.socketId !== socketId));
+      });
     };
+
     init();
 
     return () => {
-      socketRef.current && socketRef.current.disconnect();
-      socketRef.current.off(ACTIONS.JOINED);
-      socketRef.current.off(ACTIONS.DISCONNECTED);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current.off(ACTIONS.JOINED);
+        socketRef.current.off(ACTIONS.DISCONNECTED);
+      }
     };
-  }, []);
-
-  if (!Location.state) {
-    return <Navigate to="/" />;
-  }
+  }, [loading, username, roomId, navigate]);
 
   const copyRoomId = async () => {
     try {
       await navigator.clipboard.writeText(roomId);
-      toast.success(`Room ID is copied`);
+      toast.success("Room ID is copied");
     } catch (error) {
       console.log(error);
       toast.error("Unable to copy the room ID");
     }
   };
 
-  const leaveRoom = async () => {
-    navigate("/");
-  };
+  const leaveRoom = () => navigate("/");
 
   const runCode = async () => {
     setIsCompiling(true);
@@ -117,9 +102,7 @@ function EditorPage() {
       const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/compile`, {
         code: codeRef.current,
         language: selectedLanguage,
-  });
-
-      console.log("Backend response:", response.data);
+      });
       setOutput(response.data.output || JSON.stringify(response.data));
     } catch (error) {
       console.error("Error compiling code:", error);
@@ -129,25 +112,27 @@ function EditorPage() {
     }
   };
 
-  const toggleCompileWindow = () => {
-    setIsCompileWindowOpen(!isCompileWindowOpen);
-  };
+  const toggleCompileWindow = () => setIsCompileWindowOpen((p) => !p);
 
   return (
     <div className="container-fluid vh-100 d-flex flex-column">
       <div className="row flex-grow-1">
-        {/* Client panel */}
         <div className="col-md-2 bg-dark text-light d-flex flex-column">
-          <img
-            src="/images/codecast.png"
-            alt="Logo"
-            className="img-fluid mx-auto"
-            style={{ maxWidth: "150px", marginTop: "-43px" }}
-          />
-          <hr style={{ marginTop: "-3rem" }} />
+          <div className="text-center pt-3">
+            <img
+              src="/images/codecast.svg"
+              alt="CodeSync Live"
+              style={{ height: "80px", width: "auto" }}
+            />
+            <hr className="text-secondary mt-0 mb-3" />
+          </div>
 
-          {/* Client list container */}
-          <div className="d-flex flex-column flex-grow-1 overflow-auto">
+          <div className="px-2 pb-2 d-flex align-items-center gap-2">
+            <small className="text-secondary m-0">You:</small>
+            <span className="fw-bold">{username || "..."}</span>
+          </div>
+
+          <div className="d-flex flex-column flex-grow-1 overflow-auto px-2">
             <span className="mb-2">Members</span>
             {clients.map((client) => (
               <Client key={client.socketId} username={client.username} />
@@ -155,8 +140,7 @@ function EditorPage() {
           </div>
 
           <hr />
-          {/* Buttons */}
-          <div className="mt-auto mb-3">
+          <div className="mt-auto mb-3 px-2">
             <button className="btn btn-success w-100 mb-2" onClick={copyRoomId}>
               Copy Room ID
             </button>
@@ -166,19 +150,41 @@ function EditorPage() {
           </div>
         </div>
 
-        {/* Editor panel */}
         <div className="col-md-10 text-light d-flex flex-column">
-          {/* Language selector */}
-          <div className="bg-dark p-2 d-flex justify-content-end">
+          <div className="bg-dark p-2 d-flex justify-content-end align-items-center gap-2">
+            {/* Chat pill button with unread count */}
+            <button
+              className="cs-chat-btn position-relative"
+              onClick={() => {
+                setIsChatOpen(true);
+                setUnreadCount(0);
+              }}
+              type="button"
+              title="Open Chat"
+            >
+              <span className="cs-chat-btn-icon" aria-hidden="true">💬</span>
+              <span className="cs-chat-btn-text">Chat</span>
+              {unreadCount > 0 && (
+                <span className="cs-unread-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+              )}
+            </button>
+
+            <button
+              className="btn btn-primary"
+              onClick={toggleCompileWindow}
+              type="button"
+              title={isCompileWindowOpen ? "Close Compiler" : "Open Compiler"}
+            >
+              {isCompileWindowOpen ? "Close Compiler" : "Open Compiler"}
+            </button>
+
             <select
               className="form-select w-auto"
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
             >
               {LANGUAGES.map((lang) => (
-                <option key={lang} value={lang}>
-                  {lang}
-                </option>
+                <option key={lang} value={lang}>{lang}</option>
               ))}
             </select>
           </div>
@@ -193,20 +199,17 @@ function EditorPage() {
         </div>
       </div>
 
-      {/* Compiler toggle button */}
-      <button
-        className="btn btn-primary position-fixed bottom-0 end-0 m-3"
-        onClick={toggleCompileWindow}
-        style={{ zIndex: 1050 }}
-      >
-        {isCompileWindowOpen ? "Close Compiler" : "Open Compiler"}
-      </button>
+      <Chat
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        socketRef={socketRef}
+        roomId={roomId}
+        me={user}
+        onIncomingWhileClosed={() => setUnreadCount((c) => c + 1)}
+      />
 
-      {/* Compiler section */}
       <div
-        className={`bg-dark text-light p-3 ${
-          isCompileWindowOpen ? "d-block" : "d-none"
-        }`}
+        className={`bg-dark text-light p-3 ${isCompileWindowOpen ? "d-block" : "d-none"}`}
         style={{
           position: "fixed",
           bottom: 0,
@@ -221,11 +224,7 @@ function EditorPage() {
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="m-0">Compiler Output ({selectedLanguage})</h5>
           <div>
-            <button
-              className="btn btn-success me-2"
-              onClick={runCode}
-              disabled={isCompiling}
-            >
+            <button className="btn btn-success me-2" onClick={runCode} disabled={isCompiling}>
               {isCompiling ? "Compiling..." : "Run Code"}
             </button>
             <button className="btn btn-secondary" onClick={toggleCompileWindow}>

@@ -1,5 +1,3 @@
-// All the events
-
 export const ACTIONS = {
   JOIN: "join",
   JOINED: "joined",
@@ -7,4 +5,15 @@ export const ACTIONS = {
   CODE_CHANGE: "code-change",
   SYNC_CODE: "sync-code",
   LEAVE: "leave",
+
+  SEND_MESSAGE: "SEND_MESSAGE",
+  RECEIVE_MESSAGE: "RECEIVE_MESSAGE",
+
+  TYPING: "TYPING",
+  STOP_TYPING: "STOP_TYPING",
+  USER_TYPING: "USER_TYPING",
+
+  CHAT_OPEN: "CHAT_OPEN",
+  CHAT_CLOSE: "CHAT_CLOSE",
+  MESSAGE_SEEN: "MESSAGE_SEEN",
 };

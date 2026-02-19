@@ -1,24 +1,78 @@
-# CodeCast - Real-time Code Collaboration
+# CodeSync Live - Real-time Collaborative Code Editor
 
-CodeSync Live is a real-time collaborative code editor where multiple users can join a shared room and edit code together with instant sync. It also supports multi-language code execution via the JDoodle Compiler API.
+CodeSync Live is a full-stack real-time collaborative coding platform where multiple users can join a shared room and edit code together instantly. It also supports secure authentication, persistent chat, and multi-language code execution using the JDoodle Compiler API.
 
-## Features
+---
+
+## 🚀 Features
 
 - Create or join rooms using a unique Room ID
-- Real-time multi-user editing with Socket.IO
-- User presence (join/leave notifications)
-- Code editor with syntax highlighting (CodeMirror)
-- Run code in multiple languages (JDoodle API)
+- Real-time collaborative code editing with Socket.IO
+- Secure user authentication (JWT + hashed passwords)
+- Persistent real-time room chat (stored in MongoDB)
+- User presence system (join/leave notifications)
+- Syntax highlighting code editor (CodeMirror)
+- Multi-language code execution (JDoodle API)
+- Protected routes for authenticated users
+- Scalable backend architecture with REST + WebSockets
 
-## Technologies Used
+---
 
-- Express.js: Handling API requests.
-- React: Building the front-end interface.
-- Node.js: Running the server.
-- Socket.IO: Enabling real-time communication.
-- uuid: Generating unique room IDs.
-- CodeMirror: Providing the code editor.
-- Code Execution: JDoodle Compiler API
+## 🛠️ Tech Stack
+
+### Frontend
+- React.js
+- Context API
+- CodeMirror
+- Axios
+- React Router
+
+### Backend
+- Node.js
+- Express.js
+- MongoDB Atlas
+- Mongoose
+- Socket.IO
+- JWT Authentication
+- bcrypt password hashing
+
+### APIs & Tools
+- JDoodle Compiler API
+- UUID (Room ID generation)
+
+---
+
+## 🔐 Authentication System
+
+- Secure registration and login
+- JWT-based session handling
+- Password hashing with bcrypt
+- Protected routes for editor access
+- Persistent login using localStorage tokens
+
+---
+
+## 💬 Real-time Chat System
+
+Each room includes a built-in live chat panel allowing users to communicate while collaborating. Messages are:
+
+- Sent instantly via WebSockets
+- Stored in MongoDB
+- Loaded automatically when joining a room
+- Scoped per room (no cross-room messages)
+
+---
+
+## 🧠 Architecture Overview
+
+CodeSync Live uses a hybrid communication architecture:
+
+- REST API → Authentication + data fetching
+- WebSockets → Real-time editor sync + chat + presence
+
+This ensures low latency collaboration while maintaining scalable backend structure.
+
+---
 
 
 ## Development
